@@ -13,6 +13,7 @@ sealed class HomeEvent {
     data class OnDateChanged(val value: String) : HomeEvent()
     data class OnTimeChanged(val value: String) : HomeEvent()
     data class OnNominalChanged(val value: String) : HomeEvent()
+    data class OnDescChanged(val value: String) : HomeEvent()
     data class OnStruckChanged(val value: Uri) : HomeEvent()
 }
 

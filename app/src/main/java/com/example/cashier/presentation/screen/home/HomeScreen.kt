@@ -170,7 +170,8 @@ private fun PreviewCard() {
                 date = "27 Dec 1999",
                 time = "12:00",
                 nominal = 100000,
-                struck = "https://picsum.photos/200/300"
+                struck = "https://picsum.photos/200/300",
+                description = ""
             ),
             onEdit = {},
             onDelete = {}

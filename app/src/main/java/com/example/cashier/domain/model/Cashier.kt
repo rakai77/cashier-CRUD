@@ -7,5 +7,6 @@ data class Cashier(
     val date: String,
     val time: String,
     val nominal: Long,
-    val struck: String
+    val struck: String,
+    val description: String
 )

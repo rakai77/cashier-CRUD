@@ -19,5 +19,7 @@ data class CashierEntity(
     @ColumnInfo(name = "nominal")
     val nominal: Long,
     @ColumnInfo(name = "struck")
-    val struck: String
+    val struck: String,
+    @ColumnInfo(name = "description")
+    val description: String
 )

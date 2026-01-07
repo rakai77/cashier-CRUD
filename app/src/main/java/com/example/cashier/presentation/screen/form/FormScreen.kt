@@ -307,6 +307,18 @@ fun AddCashierFormContentWithCamera(
             singleLine = true,
             prefix = { Text("Rp ") }
         )
+        OutlinedTextField(
+            value = uiState.description,
+            onValueChange = {
+                onEvent(HomeEvent.OnDescChanged(it))
+            },
+            label = { Text("Keterangan") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = uiState.nominalError != null,
+            supportingText = { uiState.nominalError?.let { Text(it) } },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)

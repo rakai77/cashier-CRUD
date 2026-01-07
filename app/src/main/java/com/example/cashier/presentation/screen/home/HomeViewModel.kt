@@ -62,7 +62,8 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                         date = _uiState.value.date,
                         time = _uiState.value.time,
                         nominal = nominalValue,
-                        struck = _uiState.value.struck
+                        struck = _uiState.value.struck,
+                        description = _uiState.value.description
                     )
 
                     if (event.mode == "add") {
@@ -93,6 +94,7 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                                     time = cashier?.time ?: "",
                                     nominal = cashier?.nominal?.toString() ?: "",
                                     struck = cashier?.struck ?: "",
+                                    description = cashier?.description ?: "",
                                     isSaved = false,
                                     isLoading = false
                                 )
@@ -155,6 +157,11 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                 is HomeEvent.OnStruckChanged -> {
                     _uiState.value = _uiState.value.copy(
                         struck = event.value.toString()
+                    )
+                }
+                is HomeEvent.OnDescChanged -> {
+                    _uiState.value = _uiState.value.copy(
+                        description = event.value
                     )
                 }
             }

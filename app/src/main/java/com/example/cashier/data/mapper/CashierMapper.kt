@@ -11,7 +11,8 @@ fun CashierEntity.toModel(): Cashier {
         date = date,
         time = time,
         nominal = nominal,
-        struck = struck
+        struck = struck,
+        description = description
     )
 }
 
@@ -23,6 +24,7 @@ fun Cashier.toEntity(): CashierEntity {
         date = date,
         time = time,
         nominal = nominal,
-        struck = struck
+        struck = struck,
+        description = description
     )
 }
