@@ -35,16 +35,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.cashier.presentation.screen.home.HomeEvent
 import com.example.cashier.presentation.screen.home.HomeUiState
 import com.example.cashier.presentation.screen.home.HomeViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -57,29 +61,33 @@ fun FormScreen(
     navController: NavController,
     id: Int?
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Observe the result from the CameraScreen
     val capturedImageUri = navController.currentBackStackEntry
         ?.savedStateHandle
-        ?.get<Uri>("capturedImageUri")
+        ?.getLiveData<Uri>("capturedImageUri")?.value
 
     LaunchedEffect(key1 = id) {
-        if (id != null) {
+        if (id != null && id != -1) {
             viewModel.onEvent(HomeEvent.LoadCashier(id))
         } else {
             viewModel.onEvent(HomeEvent.ClearForm)
         }
     }
 
-    LaunchedEffect(key1 = uiState.isSaved) {
-        if (uiState.isSaved) {
-            navController.popBackStack()
+    // This is the new centralized logic.
+    // When a new image is captured, update the ViewModel and consume the result.
+    LaunchedEffect(capturedImageUri) {
+        if (capturedImageUri != null) {
+            viewModel.onEvent(HomeEvent.OnStruckChanged(capturedImageUri))
+            navController.currentBackStackEntry?.savedStateHandle?.remove<Uri>("capturedImageUri")
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(if (id == null) "Add Item" else "Edit Item") })
+            TopAppBar(title = { Text(if (id == null || id == -1) "Add Item" else "Edit Item") })
         }
     ) { padding ->
         Column(
@@ -88,10 +96,10 @@ fun FormScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            if (uiState.isLoading && uiState.cashier == null && id != null) {
+            if (uiState.isLoading && id != null && id != -1) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
-                AddCashierFormContent(uiState, viewModel::onEvent, navController, capturedImageUri, id)
+                AddCashierFormContent(uiState, viewModel::onEvent, navController, id)
             }
         }
     }
@@ -102,11 +110,12 @@ fun AddCashierFormContent(
     uiState: HomeUiState,
     onEvent: (HomeEvent) -> Unit,
     navController: NavController,
-    capturedImageUri: Uri?,
     id: Int?
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+    val isEditMode = id != null && id != -1
+    val coroutine = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -193,24 +202,29 @@ fun AddCashierFormContent(
             OutlinedButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
                 Text("Add Photo")
             }
-            val imageToShow = capturedImageUri?.toString() ?: uiState.struck
-            if (imageToShow.isNotEmpty()) {
-                if (capturedImageUri != null) {
-                    onEvent(HomeEvent.OnStruckChanged(capturedImageUri))
-                }
+            // The single source of truth is now uiState.struck
+            if (uiState.struck.isNotEmpty()) {
                 Image(
-                    painter = rememberAsyncImagePainter(imageToShow),
+                    painter = rememberAsyncImagePainter(uiState.struck),
                     contentDescription = null,
                     modifier = Modifier.size(100.dp).padding(start = 16.dp)
                 )
+                // This now works correctly
                 IconButton(onClick = { onEvent(HomeEvent.ClearStruckImage) }) {
                     Icon(Icons.Default.Clear, "Clear image")
                 }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = { onEvent(HomeEvent.InsertOrUpdate(id)) }) {
-            Text("Save")
+        Button(
+            onClick = {
+                coroutine.launch {
+                    onEvent(HomeEvent.InsertOrUpdate(id))
+                    navController.popBackStack()
+                }
+            }
+        ) {
+            Text(if (isEditMode) "Update" else "Add")
         }
     }
 }

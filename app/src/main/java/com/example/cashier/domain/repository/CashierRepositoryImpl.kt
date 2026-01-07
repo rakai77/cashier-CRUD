@@ -1,10 +1,11 @@
-package com.example.cashier.domain.repository
+package com.example.cashier.data.repository
 
 import com.example.cashier.data.local.database.dao.CashierDao
 import com.example.cashier.data.mapper.toEntity
 import com.example.cashier.data.mapper.toModel
 import com.example.cashier.domain.model.Cashier
 import com.example.cashier.domain.model.Resource
+import com.example.cashier.domain.repository.CashierRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.IOException
@@ -15,6 +16,21 @@ class CashierRepositoryImpl(private val cashierDao: CashierDao) : CashierReposit
         try {
             cashierDao.getAll().collect { entities ->
                 emit(Resource.Success(entities.map { it.toModel() }))
+            }
+        } catch (e: IOException) {
+            emit(Resource.Error("Could not load data from database"))
+        }
+    }
+
+    override fun getCashierById(id: Int): Flow<Resource<Cashier?>> = flow {
+        emit(Resource.Loading())
+        try {
+            cashierDao.getById(id).collect { entity ->
+                if (entity != null) {
+                    emit(Resource.Success(entity.toModel()))
+                } else {
+                    emit(Resource.Error("Item not found"))
+                }
             }
         } catch (e: IOException) {
             emit(Resource.Error("Could not load data from database"))

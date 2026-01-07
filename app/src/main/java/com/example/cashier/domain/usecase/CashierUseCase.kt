@@ -7,6 +7,10 @@ class GetAllCashierUseCase(private val repository: CashierRepository) {
     operator fun invoke() = repository.getAllCashier()
 }
 
+class GetCashierByIdUseCase(private val repository: CashierRepository) {
+    operator fun invoke(id: Int) = repository.getCashierById(id)
+}
+
 class InsertCashierUseCase(private val repository: CashierRepository) {
     suspend operator fun invoke(cashier: Cashier) = repository.insertCashier(cashier)
 }
@@ -21,6 +25,7 @@ class DeleteCashierUseCase(private val repository: CashierRepository) {
 
 data class CashierUseCases(
     val getAllCashier: GetAllCashierUseCase,
+    val getCashierById: GetCashierByIdUseCase,
     val insertCashier: InsertCashierUseCase,
     val updateCashier: UpdateCashierUseCase,
     val deleteCashier: DeleteCashierUseCase

@@ -21,4 +21,7 @@ interface CashierDao {
 
     @Query("SELECT * FROM cashier ORDER BY date DESC, time DESC")
     fun getAll(): Flow<List<CashierEntity>>
+
+    @Query("SELECT * FROM cashier WHERE id = :id")
+    fun getById(id: Int): Flow<CashierEntity?>
 }

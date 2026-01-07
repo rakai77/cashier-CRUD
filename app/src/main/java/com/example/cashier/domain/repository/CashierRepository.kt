@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface CashierRepository {
     fun getAllCashier(): Flow<Resource<List<Cashier>>>
+    fun getCashierById(id: Int): Flow<Resource<Cashier?>>
     suspend fun insertCashier(cashier: Cashier)
     suspend fun updateCashier(cashier: Cashier)
     suspend fun deleteCashier(id: Int)

@@ -72,17 +72,29 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                     useCases.deleteCashier(event.id)
                 }
                 is HomeEvent.LoadCashier -> {
-                    val cashier = _uiState.value.cashierList.find { it.id == event.id }
-                    _uiState.value = _uiState.value.copy(
-                        cashier = cashier,
-                        nameInput = cashier?.nameInput ?: "",
-                        nameOutput = cashier?.nameOutput ?: "",
-                        date = cashier?.date ?: "",
-                        time = cashier?.time ?: "",
-                        nominal = cashier?.nominal?.toString() ?: "",
-                        struck = cashier?.struck ?: "",
-                        isSaved = false
-                    )
+                    useCases.getCashierById(event.id).onEach {
+                        when (it) {
+                            is Resource.Loading -> _uiState.value = _uiState.value.copy(isLoading = true)
+                            is Resource.Success -> {
+                                val cashier = it.data
+                                _uiState.value = _uiState.value.copy(
+                                    cashier = cashier,
+                                    nameInput = cashier?.nameInput ?: "",
+                                    nameOutput = cashier?.nameOutput ?: "",
+                                    date = cashier?.date ?: "",
+                                    time = cashier?.time ?: "",
+                                    nominal = cashier?.nominal?.toString() ?: "",
+                                    struck = cashier?.struck ?: "",
+                                    isSaved = false,
+                                    isLoading = false
+                                )
+                            }
+                            is Resource.Error -> _uiState.value = _uiState.value.copy(
+                                isSaved = false,
+                                isLoading = false
+                            )
+                        }
+                    }.launchIn(viewModelScope)
                 }
                 is HomeEvent.ClearForm -> {
                     _uiState.value = HomeUiState(cashierList = _uiState.value.cashierList)
