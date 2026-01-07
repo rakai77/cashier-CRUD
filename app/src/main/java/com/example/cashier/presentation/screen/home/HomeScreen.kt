@@ -1,7 +1,12 @@
 package com.example.cashier.presentation.screen.home
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.cashier.domain.model.Cashier
 import org.koin.androidx.compose.koinViewModel
 import java.text.NumberFormat
@@ -45,8 +53,12 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = koinViewModel(), navController: NavController) {
     val uiState by viewModel.uiState.collectAsState()
+
+    val capturedImageUri = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<Uri>("capturedImageUri")
 
     Scaffold(
         topBar = {
@@ -66,7 +78,7 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 Text(text = uiState.errorMessage!!)
             }
 
-            AddCashierForm(uiState, viewModel::onEvent)
+            AddCashierForm(uiState, viewModel::onEvent, navController, capturedImageUri)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -80,9 +92,23 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
 }
 
 @Composable
-fun AddCashierForm(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
+fun AddCashierForm(
+    uiState: HomeUiState, 
+    onEvent: (HomeEvent) -> Unit, 
+    navController: NavController, 
+    capturedImageUri: Uri?
+) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                navController.navigate("camera")
+            }
+        }
+    )
 
     val datePickerDialog = DatePickerDialog(
         context,
@@ -146,8 +172,18 @@ fun AddCashierForm(uiState: HomeUiState, onEvent: (HomeEvent) -> Unit) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
-        OutlinedButton(onClick = { /* TODO: Implement photo picker */ }) {
-            Text("Add Photo")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                Text("Add Photo")
+            }
+            if (capturedImageUri != null) {
+                onEvent(HomeEvent.OnStruckChanged(capturedImageUri))
+                Image(
+                    painter = rememberAsyncImagePainter(capturedImageUri),
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp).padding(start = 16.dp)
+                )
+            }
         }
         Button(onClick = { onEvent(HomeEvent.InsertOrUpdate()) }) {
             Text("Save")
@@ -172,6 +208,13 @@ fun CashierItem(cashier: Cashier, onDelete: () -> Unit) {
                 Text(text = "Output: ${cashier.nameOutput}")
                 Text(text = "Nominal: ${NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(cashier.nominal)}")
                 Text(text = "${cashier.date} ${cashier.time}")
+                if (cashier.struck.isNotEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(cashier.struck),
+                        contentDescription = null,
+                        modifier = Modifier.size(100.dp).padding(top = 8.dp)
+                    )
+                }
             }
             Button(onClick = onDelete) {
                 Text("Delete")

@@ -1,5 +1,6 @@
 package com.example.cashier.presentation.screen.home
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cashier.domain.model.Cashier
@@ -15,7 +16,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         getAllCashier()
@@ -40,6 +41,7 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                     val date = _uiState.value.date
                     val time = _uiState.value.time
                     val nominal = _uiState.value.nominal
+                    val struck = _uiState.value.struck
                     if (nameInput.isBlank() || nameOutput.isBlank() || nominal.isBlank() || date.isBlank() || time.isBlank()) {
                         _uiState.value = _uiState.value.copy(errorMessage = "All fields must be filled")
                         return@launch
@@ -52,7 +54,7 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                         date = date,
                         time = time,
                         nominal = nominal.toLong(),
-                        struck = ""
+                        struck = struck
                     )
 
                     if (isDuplicate(cashier)) {
@@ -75,6 +77,9 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
                 is HomeEvent.OnDateChanged -> _uiState.value = _uiState.value.copy(date = event.value)
                 is HomeEvent.OnTimeChanged -> _uiState.value = _uiState.value.copy(time = event.value)
                 is HomeEvent.OnNominalChanged -> _uiState.value = _uiState.value.copy(nominal = event.value)
+                is HomeEvent.OnStruckChanged -> {
+                    _uiState.value = _uiState.value.copy(struck = event.value.toString())
+                }
             }
         }
     }
