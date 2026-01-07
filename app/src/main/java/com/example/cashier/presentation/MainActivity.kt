@@ -1,4 +1,4 @@
-package com.example.cashier
+package com.example.cashier.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
