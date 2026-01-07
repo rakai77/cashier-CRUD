@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +49,10 @@ fun CameraScreen(
                 }
             }
         )
-        // This is needed for the controller to start receiving lifecycle events
-        cameraController.bindToLifecycle(lifecycleOwner)
+
+        LaunchedEffect(lifecycleOwner) {
+            cameraController.bindToLifecycle(lifecycleOwner)
+        }
 
         IconButton(
             onClick = {

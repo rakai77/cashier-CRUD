@@ -26,8 +26,14 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
         useCases.getAllCashier().onEach {
             when (it) {
                 is Resource.Loading -> _uiState.value = _uiState.value.copy(isLoading = true)
-                is Resource.Success -> _uiState.value = _uiState.value.copy(cashierList = it.data ?: emptyList(), isLoading = false)
-                is Resource.Error -> _uiState.value = _uiState.value.copy(errorMessage = it.message, isLoading = false)
+                is Resource.Success -> _uiState.value = _uiState.value.copy(
+                    cashierList = it.data ?: emptyList(),
+                    isLoading = false
+                )
+                is Resource.Error -> _uiState.value = _uiState.value.copy(
+                    // Not showing a global error for list loading issues
+                    isLoading = false 
+                )
             }
         }.launchIn(viewModelScope)
     }
@@ -36,47 +42,59 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
         viewModelScope.launch {
             when (event) {
                 is HomeEvent.InsertOrUpdate -> {
-                    val nameInput = _uiState.value.nameInput
-                    val nameOutput = _uiState.value.nameOutput
-                    val date = _uiState.value.date
-                    val time = _uiState.value.time
-                    val nominal = _uiState.value.nominal
-                    val struck = _uiState.value.struck
-                    if (nameInput.isBlank() || nameOutput.isBlank() || nominal.isBlank() || date.isBlank() || time.isBlank()) {
-                        _uiState.value = _uiState.value.copy(errorMessage = "All fields must be filled")
+                    if (!validateForm()) return@launch
+
+                    val nominalValue = try {
+                        _uiState.value.nominal.toLong()
+                    } catch (e: NumberFormatException) {
+                        _uiState.value = _uiState.value.copy(nominalError = "Invalid number")
                         return@launch
                     }
 
                     val cashier = Cashier(
-                        id = event.id ?: 0,
-                        nameInput = nameInput,
-                        nameOutput = nameOutput,
-                        date = date,
-                        time = time,
-                        nominal = nominal.toLong(),
-                        struck = struck
+                        id = event.id ?: _uiState.value.cashier?.id ?: 0,
+                        nameInput = _uiState.value.nameInput,
+                        nameOutput = _uiState.value.nameOutput,
+                        date = _uiState.value.date,
+                        time = _uiState.value.time,
+                        nominal = nominalValue,
+                        struck = _uiState.value.struck
                     )
-
-                    if (isDuplicate(cashier)) {
-                        _uiState.value = _uiState.value.copy(errorMessage = "Data already exists")
-                        return@launch
-                    }
 
                     if (event.id == null) {
                         useCases.insertCashier(cashier)
                     } else {
                         useCases.updateCashier(cashier)
                     }
-                    _uiState.value = HomeUiState() // Reset the form
+                    _uiState.value = _uiState.value.copy(isSaved = true)
                 }
                 is HomeEvent.Delete -> {
                     useCases.deleteCashier(event.id)
                 }
-                is HomeEvent.OnNameInputChanged -> _uiState.value = _uiState.value.copy(nameInput = event.value)
-                is HomeEvent.OnNameOutputChanged -> _uiState.value = _uiState.value.copy(nameOutput = event.value)
-                is HomeEvent.OnDateChanged -> _uiState.value = _uiState.value.copy(date = event.value)
-                is HomeEvent.OnTimeChanged -> _uiState.value = _uiState.value.copy(time = event.value)
-                is HomeEvent.OnNominalChanged -> _uiState.value = _uiState.value.copy(nominal = event.value)
+                is HomeEvent.LoadCashier -> {
+                    val cashier = _uiState.value.cashierList.find { it.id == event.id }
+                    _uiState.value = _uiState.value.copy(
+                        cashier = cashier,
+                        nameInput = cashier?.nameInput ?: "",
+                        nameOutput = cashier?.nameOutput ?: "",
+                        date = cashier?.date ?: "",
+                        time = cashier?.time ?: "",
+                        nominal = cashier?.nominal?.toString() ?: "",
+                        struck = cashier?.struck ?: "",
+                        isSaved = false
+                    )
+                }
+                is HomeEvent.ClearForm -> {
+                    _uiState.value = HomeUiState(cashierList = _uiState.value.cashierList)
+                }
+                is HomeEvent.ClearStruckImage -> {
+                    _uiState.value = _uiState.value.copy(struck = "")
+                }
+                is HomeEvent.OnNameInputChanged -> _uiState.value = _uiState.value.copy(nameInput = event.value, nameInputError = null)
+                is HomeEvent.OnNameOutputChanged -> _uiState.value = _uiState.value.copy(nameOutput = event.value, nameOutputError = null)
+                is HomeEvent.OnDateChanged -> _uiState.value = _uiState.value.copy(date = event.value, dateError = null)
+                is HomeEvent.OnTimeChanged -> _uiState.value = _uiState.value.copy(time = event.value, timeError = null)
+                is HomeEvent.OnNominalChanged -> _uiState.value = _uiState.value.copy(nominal = event.value, nominalError = null)
                 is HomeEvent.OnStruckChanged -> {
                     _uiState.value = _uiState.value.copy(struck = event.value.toString())
                 }
@@ -84,14 +102,25 @@ class HomeViewModel(private val useCases: CashierUseCases) : ViewModel() {
         }
     }
 
-    private fun isDuplicate(cashier: Cashier): Boolean {
-        return _uiState.value.cashierList.any {
-            it.nameInput == cashier.nameInput &&
-                    it.nameOutput == cashier.nameOutput &&
-                    it.nominal == cashier.nominal &&
-                    it.date == cashier.date &&
-                    it.time == cashier.time &&
-                    it.id != cashier.id // Ignore the same item on update
+    private fun validateForm(): Boolean {
+        val nameInputError = if (_uiState.value.nameInput.isBlank()) "Name Input is required" else null
+        val nameOutputError = if (_uiState.value.nameOutput.isBlank()) "Name Output is required" else null
+        val dateError = if (_uiState.value.date.isBlank()) "Date is required" else null
+        val timeError = if (_uiState.value.time.isBlank()) "Time is required" else null
+        val nominalError = when {
+            _uiState.value.nominal.isBlank() -> "Nominal is required"
+            _uiState.value.nominal.toLongOrNull() == null -> "Must be a valid number"
+            else -> null
         }
+
+        _uiState.value = _uiState.value.copy(
+            nameInputError = nameInputError,
+            nameOutputError = nameOutputError,
+            dateError = dateError,
+            timeError = timeError,
+            nominalError = nominalError
+        )
+
+        return nameInputError == null && nameOutputError == null && dateError == null && timeError == null && nominalError == null
     }
 }
