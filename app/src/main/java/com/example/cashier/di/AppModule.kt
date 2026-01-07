@@ -8,7 +8,9 @@ import com.example.cashier.domain.usecase.DeleteCashierUseCase
 import com.example.cashier.domain.usecase.GetAllCashierUseCase
 import com.example.cashier.domain.usecase.InsertCashierUseCase
 import com.example.cashier.domain.usecase.UpdateCashierUseCase
+import com.example.cashier.presentation.screen.home.HomeViewModel
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val appModule = module {
@@ -32,4 +34,6 @@ val appModule = module {
             deleteCashier = DeleteCashierUseCase(get())
         )
     }
+
+    viewModelOf(::HomeViewModel)
 }
