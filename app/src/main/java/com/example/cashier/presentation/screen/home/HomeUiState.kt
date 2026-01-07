@@ -17,5 +17,5 @@ data class HomeUiState(
     val timeError: String? = null,
     val nominal: String = "",
     val nominalError: String? = null,
-    val struck: String = "" // This will hold the path to the photo
+    val struck: String = ""
 )

@@ -1,7 +1,7 @@
 package com.example.cashier.di
 
 import com.example.cashier.data.local.database.CashierDatabase
-import com.example.cashier.data.repository.CashierRepositoryImpl
+import com.example.cashier.domain.repository.CashierRepositoryImpl
 import com.example.cashier.domain.repository.CashierRepository
 import com.example.cashier.domain.usecase.CashierUseCases
 import com.example.cashier.domain.usecase.DeleteCashierUseCase

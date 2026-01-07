@@ -3,7 +3,7 @@ package com.example.cashier.presentation.screen.home
 import android.net.Uri
 
 sealed class HomeEvent {
-    data class InsertOrUpdate(val id: Int? = null) : HomeEvent()
+    data class InsertOrUpdate(val mode: String, val id: Int? = null) : HomeEvent()
     data class Delete(val id: Int) : HomeEvent()
     data class LoadCashier(val id: Int) : HomeEvent()
     object ClearForm : HomeEvent()
@@ -15,3 +15,4 @@ sealed class HomeEvent {
     data class OnNominalChanged(val value: String) : HomeEvent()
     data class OnStruckChanged(val value: Uri) : HomeEvent()
 }
+

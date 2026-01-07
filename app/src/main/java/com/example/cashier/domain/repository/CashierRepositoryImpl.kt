@@ -1,11 +1,10 @@
-package com.example.cashier.data.repository
+package com.example.cashier.domain.repository
 
 import com.example.cashier.data.local.database.dao.CashierDao
 import com.example.cashier.data.mapper.toEntity
 import com.example.cashier.data.mapper.toModel
 import com.example.cashier.domain.model.Cashier
 import com.example.cashier.domain.model.Resource
-import com.example.cashier.domain.repository.CashierRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.IOException
