@@ -14,9 +14,7 @@ import androidx.navigation.navArgument
 import com.example.cashier.presentation.screen.camera.CameraScreen
 import com.example.cashier.presentation.screen.form.FormScreen
 import com.example.cashier.presentation.screen.home.HomeScreen
-import com.example.cashier.presentation.screen.home.HomeViewModel
 import com.example.cashier.presentation.theme.CashierTheme
-import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
